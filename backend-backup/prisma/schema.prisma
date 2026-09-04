@@ -1,0 +1,165 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+}
+
+enum ListingType {
+  SALE
+  DONATION
+}
+
+enum ListingStatus {
+  AVAILABLE
+  ENDING_SOON
+  SOLD_OUT
+  EXPIRED
+  CLOSED
+  REMOVED
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  COLLECTED
+  CANCELLED
+}
+
+enum DonationRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COLLECTED
+  CANCELLED
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  password     String
+  role         Role     @default(CUSTOMER)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  provider          Provider?
+  reservations      Reservation[]
+  donationRequests  DonationRequest[]
+  reports           Report[]
+
+  @@map("users")
+}
+
+model Provider {
+  id           String   @id @default(cuid())
+  userId       String   @unique @map("user_id")
+  businessName String   @map("business_name")
+  businessType String   @map("business_type")
+  location     String
+  phone        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings Listing[]
+
+  @@map("providers")
+}
+
+model Listing {
+  id                String        @id @default(cuid())
+  providerId        String        @map("provider_id")
+  foodName          String        @map("food_name")
+  category          String
+  quantity          Int
+  quantityRemaining Int           @map("quantity_remaining")
+  originalPrice     Decimal       @default(0) @map("original_price") @db.Decimal(10, 2)
+  sellingPrice      Decimal       @default(0) @map("selling_price") @db.Decimal(10, 2)
+  listingType       ListingType   @map("listing_type")
+  location          String
+  pickupStart       DateTime      @map("pickup_start")
+  pickupEnd         DateTime      @map("pickup_end")
+  description       String
+  imageUrl          String?       @map("image_url")
+  status            ListingStatus @default(AVAILABLE)
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  provider         Provider           @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  reservations     Reservation[]
+  donationRequests DonationRequest[]
+  reports          Report[]
+
+  @@index([providerId])
+  @@index([listingType])
+  @@index([category])
+  @@index([location])
+  @@index([status])
+  @@map("listings")
+}
+
+model Reservation {
+  id           String            @id @default(cuid())
+  listingId    String            @map("listing_id")
+  userId       String            @map("user_id")
+  name         String
+  phone        String
+  quantity     Int
+  totalAmount  Decimal           @default(0) @map("total_amount") @db.Decimal(10, 2)
+  status       ReservationStatus @default(CONFIRMED)
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([userId])
+  @@map("reservations")
+}
+
+model DonationRequest {
+  id        String                 @id @default(cuid())
+  listingId String                 @map("listing_id")
+  userId    String                 @map("user_id")
+  name      String
+  phone     String
+  quantity  Int
+  reason    String
+  status    DonationRequestStatus  @default(PENDING)
+  createdAt DateTime               @default(now()) @map("created_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([userId])
+  @@map("donation_requests")
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  listingId   String       @map("listing_id")
+  reportedBy  String       @map("reported_by")
+  reason      String
+  description String
+  status      ReportStatus @default(OPEN)
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  listing  Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  reporter User    @relation(fields: [reportedBy], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@map("reports")
+}
