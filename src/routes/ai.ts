@@ -35,7 +35,7 @@ router.post("/chat", async (req, res) => {
     console.error("AI chat error:", error);
     res.json({
       message:
-        "Sorry, the RiceShare AI Assistant is temporarily unavailable. In the meantime: browse food on the Find Food page, tap Reserve Food for sale listings (pay at pickup) or Request Donation for free listings.",
+        "Sorry, the RiceShare AI Assistant is temporarily unavailable. In the meantime: browse food on the Find Food page and tap Call [phone] on any listing to contact the provider directly — no account needed.",
       fallback: true,
     });
   }
